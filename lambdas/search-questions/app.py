@@ -1,81 +1,71 @@
 import json
-import os
 import boto3
+import os
 import requests
-from boto3.dynamodb.conditions import Key
 
-# Initialize clients
 dynamodb = boto3.resource('dynamodb')
-questions_table = dynamodb.Table(os.environ['QUESTIONS_TABLE'])
-giphy_api_key = os.environ['GIPHY_API_KEY']
+table = dynamodb.Table(os.environ['QUESTIONS_TABLE'])
 
-def fetch_gifs_for_mood(mood_keyword, limit=3):
+def fetch_gifs_for_mood(mood_keyword, api_key):
     """Fetch GIFs from Giphy API based on mood keyword"""
     url = "https://api.giphy.com/v1/gifs/search"
     params = {
-        'api_key': giphy_api_key,
+        'api_key': api_key,
         'q': mood_keyword,
-        'limit': limit,
+        'limit': 3,
         'rating': 'g'
     }
     
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        return response.json()['data']
-    else:
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        gifs = response.json().get('data', [])
+        
+        gif_urls = [
+            gif['images']['fixed_height']['url'] 
+            for gif in gifs 
+            if 'images' in gif and 'fixed_height' in gif['images']
+        ]
+        
+        return gif_urls
+    except Exception as e:
+        print(f"Erro to search GIFs: {e}")
         return []
-
-def get_all_questions():
-    """Fetch all questions from DynamoDB"""
-    response = questions_table.scan()
-    return response.get('Items', [])
-
-def enrich_questions_with_gifs(questions):
-    """Add GIF options to the question that requires GIFs"""
-    for question in questions:
-        if question.get('type') == 'gif_selection':
-            options = question.get('options', [])
-            enriched_options = []
-            
-            for option in options:
-                gifs = fetch_gifs_for_mood(option, limit=1)
-                gif_url = gifs[0]['images']['fixed_height']['url'] if gifs else ""
-                
-                enriched_options.append({
-                    'text': option,
-                    'gif_url': gif_url
-                })
-                
-            question['options'] = enriched_options
-    
-    return questions
 
 def lambda_handler(event, context):
     try:
-        # Get all questions
-        questions = get_all_questions()
+        response = table.scan()
+        questions = response.get('Items', [])
         
-        # Enrich questions with GIFs
-        questions = enrich_questions_with_gifs(questions)
+        giphy_api_key = os.environ['GIPHY_API_KEY']
+        
+        for question in questions:
+            if question.get('type') == 'gif_selection':
+                options = []
+                for option in question.get('options', []):
+                    gifs = fetch_gifs_for_mood(option, giphy_api_key)
+                    options.append({
+                        'text': option,
+                        'gifs': gifs
+                    })
+                question['options'] = options
         
         return {
             'statusCode': 200,
+            'body': json.dumps(questions),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({
-                'questions': questions
-            })
+            }
         }
+    
     except Exception as e:
+        print(f"Erro to process questions: {e}")
         return {
             'statusCode': 500,
+            'body': json.dumps({'error': str(e)}),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({
-                'error': str(e)
-            })
+            }
         }

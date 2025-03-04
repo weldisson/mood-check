@@ -19,6 +19,7 @@ resource "aws_apigatewayv2_integration" "search_questions_integration" {
   integration_type   = "AWS_PROXY"
   integration_uri    = aws_lambda_function.search_questions_lambda.invoke_arn
   integration_method = "POST"
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_integration" "save_answers_integration" {
@@ -26,6 +27,7 @@ resource "aws_apigatewayv2_integration" "save_answers_integration" {
   integration_type   = "AWS_PROXY"
   integration_uri    = aws_lambda_function.save_answers_lambda.invoke_arn
   integration_method = "POST"
+  payload_format_version = "2.0"
 }
 
 resource "aws_apigatewayv2_route" "search_questions_route" {
@@ -55,4 +57,3 @@ resource "aws_lambda_permission" "save_answers_api_permission" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.mood_check_api.execution_arn}/*/*"
 }
-

@@ -1,13 +1,37 @@
+resource "null_resource" "install_dependencies_search_questions" {
+  provisioner "local-exec" {
+    command = "pip install -r ${path.module}/../lambdas/search-questions/requirements.txt -t ${path.module}/../lambdas/search-questions/"
+  }
+
+  triggers = {
+    requirements_md5 = filemd5("${path.module}/../lambdas/search-questions/requirements.txt")
+  }
+}
+
+resource "null_resource" "install_dependencies_save_answers" {
+  provisioner "local-exec" {
+    command = "pip install -r ${path.module}/../lambdas/save-answers/requirements.txt -t ${path.module}/../lambdas/save-answers/"
+  }
+
+  triggers = {
+    requirements_md5 = filemd5("${path.module}/../lambdas/save-answers/requirements.txt")
+  }
+}
+
 data "archive_file" "search_questions_lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../lambdas/search-questions"
   output_path = "${path.module}/search_questions_lambda.zip"
+  
+  depends_on = [null_resource.install_dependencies_search_questions]
 }
 
 data "archive_file" "save_answers_lambda_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../lambdas/save-answers"
   output_path = "${path.module}/save_answers_lambda.zip"
+  
+  depends_on = [null_resource.install_dependencies_save_answers]
 }
 
 resource "aws_lambda_function" "search_questions_lambda" {
