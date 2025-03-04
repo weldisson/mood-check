@@ -1,47 +1,45 @@
-// scripts/initialize-questions.js
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
-// Configure AWS
 AWS.config.update({
   region: 'us-east-1'
 });
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
-// Define the questions
 const questions = [
   {
     question_id: uuidv4(),
-    text: "How would you rate your overall mood today?",
+    text: "Como você classificaria seu humor hoje?",
     type: "multiple_choice",
     order: 1,
-    options: ["Excellent", "Good", "Neutral", "Not so good", "Terrible"]
+    options: ["Excelente", "Bom", "Neutro", "Não muito bom", "Terrível"]
   },
   {
     question_id: uuidv4(),
-    text: "How stressed do you feel right now?",
+    text: "Quão estressado você está se sentindo agora?",
     type: "multiple_choice",
     order: 2,
-    options: ["Not at all", "A little", "Moderately", "Very", "Extremely"]
+    options: ["Nada", "Um pouco", "Moderadamente", "Muito", "Extremamente"]
   },
   {
     question_id: uuidv4(),
-    text: "Which GIF best represents your mood today?",
+    text: "Qual GIF melhor representa seu humor hoje?",
     type: "gif_selection",
     order: 3,
-    options: ["happy", "sad", "tired", "excited", "confused"]
+    options: ["feliz", "triste", "cansado", "animado", "confuso"]
   },
   {
     question_id: uuidv4(),
-    text: "Is there anything specific affecting your mood that you'd like to share?",
+    text: "Há algo específico afetando seu humor que você gostaria de compartilhar?",
     type: "free_text",
     order: 4
   }
 ];
 
-// Insert the questions
 const insertQuestions = async () => {
+  console.log('Iniciando inserção de perguntas...');
+  
   for (const question of questions) {
     const params = {
       TableName: "MoodQuestions",
@@ -50,13 +48,13 @@ const insertQuestions = async () => {
 
     try {
       await dynamoDB.put(params).promise();
-      console.log(`Added question: ${question.text}`);
+      console.log(`Pergunta adicionada: ${question.text}`);
     } catch (error) {
-      console.error(`Error adding question: ${error.message}`);
+      console.error(`Erro ao adicionar pergunta: ${error.message}`);
     }
   }
 };
 
 insertQuestions()
-  .then(() => console.log('Questions initialization complete!'))
-  .catch(err => console.error('Initialization failed:', err));
+  .then(() => console.log('Inicialização de perguntas concluída!'))
+  .catch(err => console.error('Inicialização falhou:', err));

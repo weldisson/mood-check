@@ -2,9 +2,17 @@ import json
 import boto3
 import os
 import requests
+from decimal import Decimal
+
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['QUESTIONS_TABLE'])
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 def fetch_gifs_for_mood(mood_keyword, api_key):
     """Fetch GIFs from Giphy API based on mood keyword"""
@@ -52,13 +60,12 @@ def lambda_handler(event, context):
         
         return {
             'statusCode': 200,
-            'body': json.dumps(questions),
+            'body': json.dumps(questions, cls=DecimalEncoder),
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             }
         }
-    
     except Exception as e:
         print(f"Erro to process questions: {e}")
         return {

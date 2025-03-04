@@ -26,7 +26,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 201,
             'body': json.dumps({
-                'message': 'Respostas salvas com sucesso',
+                'message': 'Responses saved successfully',
                 'answer_id': answer_id,
                 'timestamp': timestamp
             }),
@@ -37,7 +37,7 @@ def lambda_handler(event, context):
         }
     
     except Exception as e:
-        print(f"Erro ao salvar respostas: {e}")
+        print(f"Error saving answers: {e}")
         return {
             'statusCode': 500,
             'body': json.dumps({'error': str(e)}),
