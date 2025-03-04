@@ -1,0 +1,116 @@
+<!-- home.component.html -->
+<div class="mood-check-container">
+  <mat-card class="welcome-card" *ngIf="!formStarted">
+    <mat-card-header>
+      <mat-card-title>Como está seu humor hoje?</mat-card-title>
+      <mat-card-subtitle>Verificador diário de humor</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <p>
+        Bem-vindo ao seu verificador de humor diário! Dedique alguns minutos para refletir sobre como você está se sentindo hoje.
+      </p>
+      <p>
+        Responder a estas perguntas pode ajudar você a rastrear seus padrões de humor ao longo do tempo e desenvolver uma maior autoconsciência.
+      </p>
+    </mat-card-content>
+    <mat-card-actions align="end">
+      <button mat-raised-button color="primary" (click)="fetchQuestions()">
+        <mat-icon>sentiment_satisfied_alt</mat-icon>
+        Responder agora
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <div *ngIf="formStarted && !submitted">
+    <mat-card class="form-card" *ngIf="!loading">
+      <mat-card-header>
+        <mat-card-title>Questionário de Humor</mat-card-title>
+        <mat-card-subtitle>Responda às perguntas abaixo</mat-card-subtitle>
+      </mat-card-header>
+      
+      <form [formGroup]="form" (ngSubmit)="submitForm()">
+        <mat-card-content>
+          <div *ngFor="let question of questions" class="question-container">
+            <h3>{{ question.text }}</h3>
+            
+            <!-- Multiple Choice Questions -->
+            <mat-form-field *ngIf="isMultipleChoice(question)" appearance="fill" class="full-width">
+              <mat-label>Selecione uma opção</mat-label>
+              <mat-select [formControlName]="question.question_id">
+                <mat-option *ngFor="let option of getStringOptions(question)" [value]="option">
+                  {{ option }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="form.get(question.question_id)?.touched && form.get(question.question_id)?.invalid">
+                Esta resposta é obrigatória
+              </mat-error>
+            </mat-form-field>
+            
+            <!-- Free Text Questions -->
+            <mat-form-field *ngIf="question.type === 'free_text'" appearance="fill" class="full-width">
+              <mat-label>Sua resposta</mat-label>
+              <textarea matInput [formControlName]="question.question_id" rows="4"></textarea>
+              <mat-error *ngIf="form.get(question.question_id)?.touched && form.get(question.question_id)?.invalid">
+                Esta resposta é obrigatória
+              </mat-error>
+            </mat-form-field>
+            
+            <!-- GIF Selection Questions -->
+            <div *ngIf="isGifSelection(question)" class="gif-container">
+              <div *ngFor="let option of getGifOptions(question); let optionIndex = index" class="gif-option-group">
+                <h4>{{ option.text }}</h4>
+                <div class="gif-grid">
+                  <div *ngFor="let gif of option.gifs; let gifIndex = index"
+                       class="gif-option"
+                       [class.selected]="isGifSelected(question.question_id, optionIndex, gifIndex)"
+                       (click)="selectGif(question.question_id, optionIndex, gifIndex)">
+                    <img [src]="gif" [alt]="option.text" class="gif-image">
+                    <div class="gif-overlay" *ngIf="isGifSelected(question.question_id, optionIndex, gifIndex)">
+                      <mat-icon class="check-icon">check_circle</mat-icon>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <mat-error *ngIf="form.get(question.question_id)?.touched && form.get(question.question_id)?.invalid" class="gif-error">
+                Por favor selecione um GIF
+              </mat-error>
+            </div>
+          </div>
+        </mat-card-content>
+        
+        <mat-card-actions align="end">
+          <button mat-button type="button" (click)="resetForm()">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading">
+            <mat-icon>send</mat-icon>
+            Enviar respostas
+          </button>
+        </mat-card-actions>
+      </form>
+    </mat-card>
+    
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Carregando...</p>
+    </div>
+  </div>
+  
+  <!-- Thank You Screen -->
+  <mat-card class="thanks-card" *ngIf="submitted">
+    <mat-card-header>
+      <mat-card-title>Obrigado pela sua resposta!</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="thanks-content">
+        <mat-icon class="thanks-icon">check_circle</mat-icon>
+        <p>Suas respostas foram registradas com sucesso.</p>
+        <p>Volte amanhã para registrar como está seu humor!</p>
+      </div>
+    </mat-card-content>
+    <mat-card-actions align="end">
+      <button mat-raised-button color="primary" (click)="resetForm()">
+        <mat-icon>refresh</mat-icon>
+        Voltar para o início
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
